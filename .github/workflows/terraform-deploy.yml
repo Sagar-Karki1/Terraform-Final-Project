@@ -1,0 +1,76 @@
+# Name of the workflow — appears in GitHub Actions tab
+name: Terraform Deploy
+
+# ─── TRIGGERS ───────────────────────────────────────────────
+# This workflow runs automatically when code is pushed to main branch
+on:
+  push:
+    branches:
+      - main # only triggers on main (prod) branch
+
+# ─── JOBS ───────────────────────────────────────────────────
+# A workflow has one or more jobs. Each job runs independently.
+jobs:
+  terraform-deploy:
+    # The type of machine to run this job on (GitHub hosted Ubuntu server)
+    runs-on: ubuntu-latest
+
+    # ─── ENVIRONMENT VARIABLES ────────────────────────────────
+    # These are available to all steps in this job
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} # pulled from GitHub secrets
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # pulled from GitHub secrets
+      AWS_REGION: ${{ secrets.AWS_REGION }} # pulled from GitHub secrets
+
+    # ─── STEPS ────────────────────────────────────────────────
+    # Steps run one after another in order
+    # If any step fails, the rest are skipped
+    steps:
+      # STEP 1 — Checkout your code from GitHub repo
+      # Without this, the runner has no access to your Terraform files
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # STEP 2 — Install Terraform on the runner machine
+      # hashicorp/setup-terraform is an official action from HashiCorp
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.0 # specify exact version for consistency
+
+      # STEP 3 — Terraform Init
+      # Downloads provider plugins and connects to S3 backend
+      # working-directory tells GitHub Actions which folder to run the command in
+      - name: Terraform Init
+        run: terraform init
+        working-directory: environments/dev # change to prod when deploying prod
+
+      # STEP 4 — Terraform Format Check
+      # Checks if your code is properly formatted
+      # -check flag means it won't auto-fix, just reports issues
+      - name: Terraform Format Check
+        run: terraform fmt -check
+        working-directory: environments/dev
+
+      # STEP 5 — Terraform Validate
+      # Validates the syntax of your Terraform code
+      # Catches errors before actually deploying anything
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: environments/dev
+
+      # STEP 6 — Terraform Plan
+      # Shows what Terraform WILL do without actually doing it
+      # -out flag saves the plan to a file for the apply step
+      # -input=false means don't prompt for user input (important for automation)
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan -input=false
+        working-directory: environments/dev
+
+      # STEP 7 — Terraform Apply
+      # Actually deploys the infrastructure
+      # -auto-approve skips the "yes" confirmation (needed for automation)
+      # tfplan uses the saved plan from previous step
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        working-directory: environments/dev
