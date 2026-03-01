@@ -80,6 +80,14 @@ jobs:
       # - IAM policies that are too permissive
       # - Unencrypted storage volumes
       # aquasecurity/trivy-action is the official Trivy GitHub Action
+      - name: Install Trivy
+        run: |
+          sudo apt-get install wget apt-transport-https gnupg -y
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy -y
+
       - name: Run Trivy
         uses: aquasecurity/trivy-action@0.28.0
         with:
