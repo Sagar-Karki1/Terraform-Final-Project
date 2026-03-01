@@ -88,19 +88,5 @@ jobs:
           sudo apt-get update
           sudo apt-get install trivy -y
 
-      - name: Run Trivy
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          # scan-type: fs means scan the filesystem (your code files)
-          scan-type: "fs"
-          # scan-ref: . means scan from current directory (root of repo)
-          scan-ref: "."
-          # format: table means show results in a readable table format
-          format: "table"
-          # exit-code: 1 means fail the workflow if vulnerabilities are found
-          exit-code: "1"
-          # ignore-unfixed: true means ignore vulnerabilities with no fix yet
-          ignore-unfixed: true
-          # severity: only fail on HIGH and CRITICAL vulnerabilities
-          # LOW and MEDIUM issues are shown but won't fail the workflow
-          severity: "HIGH,CRITICAL"
+      - name: Run Trivy Scan
+        run: trivy fs . --severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed
