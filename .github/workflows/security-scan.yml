@@ -1,0 +1,98 @@
+# Name of the workflow — appears in GitHub Actions tab
+name: Security Scan
+
+# ─── TRIGGERS ───────────────────────────────────────────────
+on:
+  push:
+    branches:
+      - dev # runs every time you push code to dev branch
+  pull_request:
+    branches:
+      - main # runs when you open a PR to merge into main
+
+# ─── JOBS ───────────────────────────────────────────────────
+jobs:
+  tflint:
+    # GitHub hosted Ubuntu machine
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:
+      # STEP 1 — Checkout your code
+      # Downloads your repo code onto the GitHub runner machine
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # STEP 2 — Setup Terraform
+      # Installs Terraform on the runner so tflint can understand your code
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.0
+
+      # STEP 3 — Setup tflint
+      # tflint = Terraform Linter
+      # A linter checks your code for:
+      # - Errors (wrong resource names, invalid arguments)
+      # - Best practices (unused variables, deprecated syntax)
+      # - AWS specific rules (invalid instance types, wrong AMI format)
+      # Think of it like a spell checker but for Terraform code
+      - name: Setup tflint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.50.0 # specify version for consistency
+
+      # STEP 4 — Initialize tflint
+      # Downloads tflint plugins needed to understand AWS resources
+      # Similar to terraform init but for tflint
+      - name: Init tflint
+        run: tflint --init
+        working-directory: environments/dev
+
+      # STEP 5 — Run tflint
+      # Actually scans your Terraform code
+      # --recursive flag scans all subdirectories including your modules
+      # If tflint finds issues it will fail the workflow and show you what's wrong
+      - name: Run tflint
+        run: tflint --recursive
+        working-directory: environments/dev
+
+  trivy:
+    # trivy runs as a separate job from tflint
+    # Both jobs run in parallel to save time
+    runs-on: ubuntu-latest
+
+    steps:
+      # STEP 1 — Checkout your code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # STEP 2 — Run Trivy Security Scan
+      # Trivy = Security vulnerability scanner
+      # It scans your Terraform code for security issues like:
+      # - S3 buckets that are publicly accessible
+      # - Security groups that are too open (0.0.0.0/0)
+      # - Missing encryption on resources
+      # - IAM policies that are too permissive
+      # - Unencrypted storage volumes
+      # aquasecurity/trivy-action is the official Trivy GitHub Action
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          # scan-type: fs means scan the filesystem (your code files)
+          scan-type: "fs"
+          # scan-ref: . means scan from current directory (root of repo)
+          scan-ref: "."
+          # format: table means show results in a readable table format
+          format: "table"
+          # exit-code: 1 means fail the workflow if vulnerabilities are found
+          exit-code: "1"
+          # ignore-unfixed: true means ignore vulnerabilities with no fix yet
+          ignore-unfixed: true
+          # severity: only fail on HIGH and CRITICAL vulnerabilities
+          # LOW and MEDIUM issues are shown but won't fail the workflow
+          severity: "HIGH,CRITICAL"
