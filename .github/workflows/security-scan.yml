@@ -81,7 +81,7 @@ jobs:
       # - Unencrypted storage volumes
       # aquasecurity/trivy-action is the official Trivy GitHub Action
       - name: Run Trivy
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           # scan-type: fs means scan the filesystem (your code files)
           scan-type: "fs"
