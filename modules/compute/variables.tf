@@ -38,7 +38,7 @@ variable "bastion_sg_id" {
   type = string
 }
 
-variable "private_sg-id" {
+variable "private_sg_id" {
   description = "Private security group ID"
   type = string
 }
