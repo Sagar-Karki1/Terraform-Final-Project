@@ -1,0 +1,30 @@
+# This is the Dynamic Inventory file for AWS EC2 instances.
+# It uses aws_ec2 plugin to fetch the inventory of EC2 instances from AWS.
+plugin: amazon.aws.aws_ec2
+
+# AWS credentials and region configuration
+regions:
+  - us-east-1
+
+# Filter only running instances
+filters:
+  instance-state-name: running
+
+# How to group instances in the inventory
+# This creates groups based on tags and instance attributes.
+keyed_groups:
+  # Group instances by their Name tag
+  # e.g., if an instance has a tag "Dev-WebServer", it will be grouped under "Dev-WebServer"
+  - key: tags.Name
+    prefix: ""
+    separator: "_"
+
+# Use Name tag for hostnames instead of IP addresses
+hostnames:
+  - tag:Name
+
+# Use private IP for SSH since ANsible runs from a bastion host in the same VPC
+# ansible_user tells Ansible which user to use for SSH connections
+compose:
+  ansible_host: private_ip_address
+  ansible_user: ec2-user

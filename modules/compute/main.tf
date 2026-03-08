@@ -1,3 +1,32 @@
+#IAM role for EC2 to access S3
+resource "aws_iam_role" "ec2_s3_access_role" {
+  name = "${var.env}-EC2-S3-Access-Role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# Attach S3 read-only policy to the role
+resource "aws_iam_role_policy_attachment" "s3_read_only_attachment" {
+  role       = aws_iam_role.ec2_s3_access_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+}
+
+#Instance Profile for EC2 to use the IAM role
+resource "aws_iam_instance_profile" "ec2_instance_profile" {
+  name = "${var.env}-EC2-Instance-Profile"
+  role = aws_iam_role.ec2_s3_access_role.name
+}
+
 resource "tls_private_key" "webserver-kp" {
   algorithm = "RSA"
   rsa_bits  = 4096
@@ -24,6 +53,7 @@ resource "aws_instance" "public_instances" {
   instance_type = var.instance_type
   key_name      = aws_key_pair.key-pair.key_name
   associate_public_ip_address = true
+  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
   tags = {
     Name = "${var.env}-WebServer-${count.index + 1}"  
   }
