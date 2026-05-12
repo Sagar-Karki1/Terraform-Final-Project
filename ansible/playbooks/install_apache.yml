@@ -1,0 +1,23 @@
+---
+# Install and configure Apache on Webserver 3 and Webserver 4.
+- hosts: _Dev_WebServer_1:_Dev_WebServer_3:_Dev_WebServer_4
+  become: yes #run as sudo
+  tasks:
+    # Task 1 - Install Apache (httpd) using yum package manager
+    - name: Install Apache
+      yum:
+        name: httpd
+        state: present
+
+    # Task 2 - Start and enable Apache service
+    - name: Start and enable Apache service
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+
+    # Task 3 - Create a simple index.html page
+    - name: Create a simple index.html page
+      copy:
+        dest: /var/www/html/index.html
+        content: "<html><body><h1>Welcome to Webserver {{ inventory_hostname }}</h1></body></html>"

@@ -1,3 +1,4 @@
+# Security Groups for Web Servers
 resource "aws_security_group" "webserver-sg" {
   name        = "${var.env}-WebServer-SG"
   description = "Security group for web servers"
@@ -27,6 +28,7 @@ resource "aws_vpc_security_group_egress_rule" "webserver-egress" {
   
 }
 
+# Security Groups for Bastion Host
 resource "aws_security_group" "bastion-sg" {
   name        = "${var.env}-Bastion-SG"
   description = "Security group for bastion host"
@@ -60,6 +62,7 @@ resource "aws_vpc_security_group_egress_rule" "allow-ssh-egress" {
   
 }
 
+#Security Group for Private Instances
 resource "aws_security_group" "private-sg" {
   name        = "${var.env}-Private-SG"
   description = "Security group for private instances"
@@ -81,4 +84,25 @@ resource "aws_vpc_security_group_egress_rule" "private_egress" {
   ip_protocol = "-1"
   cidr_ipv4      = "0.0.0.0/0"
   
+}
+
+# Security Group for load balancer
+resource "aws_security_group" "alb-sg" {
+  name        = "${var.env}-ALB-SG"
+  description = "Security group for ALB"
+  vpc_id      = var.vpc_id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "alb_ingress" {
+  security_group_id = aws_security_group.alb-sg.id
+  ip_protocol = "tcp"
+  from_port        = 80
+  to_port          = 80
+  cidr_ipv4      = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "alb_egress" {
+  security_group_id = aws_security_group.alb-sg.id
+  ip_protocol = "-1"
+  cidr_ipv4      = "0.0.0.0/0"
 }

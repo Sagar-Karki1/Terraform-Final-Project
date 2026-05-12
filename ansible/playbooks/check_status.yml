@@ -1,0 +1,38 @@
+---
+- hosts: aws_ec2
+  become: yes
+
+  tasks:
+    # Task 1 - Display which hosts are being checked
+    - name: Display server hostname
+      debug:
+        msg: "Checking status of host: {{ inventory_hostname }}"
+
+    # Task 2 - Check connectivity to the host
+    - name: Check connectivity to the host
+      ping:
+
+    # Task 3 - Check server uptime
+    - name: Check server uptime
+      command: uptime
+      register: uptime_output
+
+    # Task 4 - Display uptime information
+    - name: Display uptime information
+      debug:
+        msg: "Uptime for {{ inventory_hostname }}: {{ uptime_output.stdout }}"
+
+    # Task 5 - Gather service information
+    - name: Gather service facts
+      service_facts:
+
+    # Task 6 - Display Apache status
+    - name: Check Apache Service Status
+      debug:
+        msg: "Apache status: {{ansible_facts.services['httpd.service'].state}}"
+      when: "'httpd.service' in ansible_facts.services"
+
+    # Task 7 - Check disk usage
+    - name: Check disk usage
+      command: df -h
+      register: disk_usage
