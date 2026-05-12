@@ -1,0 +1,41 @@
+---
+- hosts: aws_ec2
+  become: yes
+
+  tasks:
+    # Task 1 - Display which host is being patched
+    - name: Display server hostname
+      debug:
+        msg: "Updating patches on host: {{ inventory_hostname }}"
+
+    # Task 2 - Update all packages to latest version
+    # name: '*' means update ALL installed packages
+    # state: latest means get the newest version available
+    - name: Update all packages to latest version
+      yum:
+        name: "*"
+        state: latest
+
+    # Task 3 - Check if reboot is required after patching
+    # Some kernel updates require a reboot to take effect
+    # stat module checks if a file exists
+    - name: Check if reboot is required
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+
+    # Task 4 - Reboot only if required
+    # reboot_timeout: 300 means wait up to 5 minutes for server to come back
+    - name: Reboot server if required
+      reboot:
+        reboot_timeout: 300
+      when: reboot_required.stat.exists
+
+    # Task 5 - Confirm server is back online after reboot
+    - name: Confirm server is back online
+      ping:
+
+    # Task 6 - Display update complete message
+    - name: Display update complete message
+      debug:
+        msg: "Patching complete on {{ inventory_hostname }}"
